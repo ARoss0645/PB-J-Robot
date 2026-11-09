@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PB&amp;J Robot Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;600;800&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e7f1f8; --surface:#ffffff; --ink:#1f2a44; --muted:#5b6782; --line:#cfdbe8;
+  --accent:#6d28d9; --accent-ink:#ffffff; --code:#f4f8fc;
+  --ok:#15803d; --ok-bg:#e6f6ec; --warn:#a16207; --warn-bg:#fdf5d8; --err:#b91c1c; --err-bg:#fde8e8;
+  --wall:#d7eaf6; --tile:#c7dff0; --counter:#e2b27c; --counter-edge:#c48d52; --drawer:#cf9a60;
+  --bread:#f6dca6; --crust:#c98a3e; --pb:#b8732c; --jelly:#8e1f5e; --glass:#eef5fb; --glass-edge:#9fb6c9;
+  --lid:#4b5568; --plate:#ffffff; --plate-edge:#b9c7d6; --bag:#ffffff; --tie:#d63c3c; --steel:#c7ced8; --handle:#3a3f4b;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121826; --surface:#1b2335; --ink:#e8eefb; --muted:#9aa8c4; --line:#2e3a54;
+    --accent:#a78bfa; --accent-ink:#160a33; --code:#151c2c;
+    --ok:#4ade80; --ok-bg:#12301f; --warn:#facc15; --warn-bg:#352c0c; --err:#f87171; --err-bg:#3a1616;
+    --wall:#1e2a40; --tile:#24324b; --counter:#8a6338; --counter-edge:#6b4a27; --drawer:#7a5530;
+    --bread:#e9cd93; --crust:#b27a33; --pb:#a8692a; --jelly:#a12a6c; --glass:#2a3650; --glass-edge:#5c6f8c;
+    --lid:#8792a8; --plate:#d9e1ec; --plate-edge:#8796aa; --bag:#dfe6f0; --tie:#e05252; --steel:#aab3c0; --handle:#2a2f3a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121826; --surface:#1b2335; --ink:#e8eefb; --muted:#9aa8c4; --line:#2e3a54;
+  --accent:#a78bfa; --accent-ink:#160a33; --code:#151c2c;
+  --ok:#4ade80; --ok-bg:#12301f; --warn:#facc15; --warn-bg:#352c0c; --err:#f87171; --err-bg:#3a1616;
+  --wall:#1e2a40; --tile:#24324b; --counter:#8a6338; --counter-edge:#6b4a27; --drawer:#7a5530;
+  --bread:#e9cd93; --crust:#b27a33; --pb:#a8692a; --jelly:#a12a6c; --glass:#2a3650; --glass-edge:#5c6f8c;
+  --lid:#8792a8; --plate:#d9e1ec; --plate-edge:#8796aa; --bag:#dfe6f0; --tie:#e05252; --steel:#aab3c0; --handle:#2a2f3a;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Nunito",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5;font-size:16px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+header.top{padding:28px 0 18px}
+h1{font-family:"Fredoka","Nunito",system-ui,sans-serif;font-weight:600;font-size:clamp(1.8rem,4.5vw,2.6rem);line-height:1.1;margin:0;letter-spacing:-.01em}
+.lede{margin:.45rem 0 0;color:var(--muted);max-width:62ch;font-size:1.05rem}
+h2{font-family:"Fredoka","Nunito",system-ui,sans-serif;font-weight:500;font-size:1.2rem;margin:0}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-areas:"editor stage" "editor log";gap:18px;padding-bottom:36px;align-items:start}
+.editor{grid-area:editor}.stage{grid-area:stage}.log-card{grid-area:log}
+@media (max-width:880px){.grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"editor" "stage" "log"}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.hint{color:var(--muted);font-size:.9rem}
+textarea{width:100%;min-height:320px;resize:vertical;font-family:"Space Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.92rem;line-height:1.75;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--code);color:var(--ink)}
+textarea:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+button{font:inherit;font-weight:800;border-radius:999px;padding:.6rem 1.15rem;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.linkish{border:none;background:none;padding:.2rem 0;color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.options{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-top:14px;font-weight:600}
+.options label{display:flex;align-items:center;gap:8px}
+.options small{display:block;color:var(--muted);font-weight:400}
+input[type=range]{accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px}
+details{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;font-weight:800}
+details p{margin:.5rem 0;color:var(--muted);font-size:.95rem}
+.extras{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
+.bubble{position:relative;border-radius:16px;padding:12px 14px 12px 58px;min-height:56px;background:var(--code);border:1.5px solid var(--line);font-weight:600}
+.bubble::before{content:"🤖";position:absolute;left:14px;top:9px;font-size:1.75rem}
+.bubble.ok{background:var(--ok-bg);border-color:var(--ok)}
+.bubble.warn{background:var(--warn-bg);border-color:var(--warn)}
+.bubble.err{background:var(--err-bg);border-color:var(--err)}
+.scene-wrap{margin-top:12px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+svg{display:block;width:100%;height:auto}
+.status{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:.3rem .7rem;border-radius:999px;background:var(--code);border:1px solid var(--line);font-size:.9rem;font-weight:600}
+.chip.bad{background:var(--err-bg);border-color:var(--err)}
+.status .k{color:var(--muted);font-weight:800;font-size:.9rem}
+#log{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto}
+#log li{display:grid;grid-template-columns:2rem minmax(0,1fr);gap:8px;padding:10px 12px;border-radius:12px;background:var(--code);border-left:5px solid var(--line)}
+#log li.ok{border-left-color:var(--ok)}#log li.warn{border-left-color:var(--warn)}#log li.err{border-left-color:var(--err);background:var(--err-bg)}
+#log .n{font-family:"Fredoka",system-ui,sans-serif;font-weight:600;font-size:1.1rem;color:var(--muted)}
+#log .said{font-family:"Space Mono",ui-monospace,Menlo,monospace;font-size:.85rem;color:var(--muted);overflow-wrap:anywhere}
+#log .did{margin-top:2px}
+.empty{color:var(--muted);margin:10px 0 0}
+#result{margin-top:12px}
+.result{border-radius:14px;padding:14px 16px;border:2px solid var(--line)}
+.result.win{border-color:var(--ok);background:var(--ok-bg)}
+.result.lose{border-color:var(--err);background:var(--err-bg)}
+.result h3{font-family:"Fredoka",system-ui,sans-serif;font-weight:600;margin:0 0 6px;font-size:1.2rem}
+.result ul{margin:.3rem 0 0;padding-left:1.2rem}
+/* scene */
+.wall{fill:var(--wall)}.tile{fill:var(--tile)}
+.counter{fill:var(--counter)}.counter-edge{fill:var(--counter-edge)}
+.drawer{fill:var(--drawer);stroke:var(--counter-edge);stroke-width:2}.knob{fill:var(--handle)}
+.bread{fill:var(--bread);stroke:var(--crust);stroke-width:4}
+.pbf{fill:var(--pb)}.jellyf{fill:var(--jelly)}
+.glass{fill:var(--glass);stroke:var(--glass-edge);stroke-width:2}
+.lid{fill:var(--lid)}.hole{fill:var(--handle);opacity:.55}
+.jlabel{fill:#fff;opacity:.92}.jtext{font:700 11px "Nunito",system-ui,sans-serif;fill:#1f2a44}
+.plate{fill:var(--plate);stroke:var(--plate-edge);stroke-width:2}
+.bagc{fill:var(--bag);fill-opacity:.55;stroke:var(--glass-edge);stroke-width:2}
+.tie{fill:var(--tie)}
+.btext{font:800 15px "Fredoka",system-ui,sans-serif;fill:var(--crust);letter-spacing:.04em}
+.steel{fill:var(--steel);stroke:var(--glass-edge);stroke-width:1}.handle{fill:var(--handle)}
+.ghost{fill:none;stroke:var(--glass-edge);stroke-width:2;stroke-dasharray:6 5}
+.lbl{font:600 12px "Nunito",system-ui,sans-serif;fill:var(--ink);opacity:.75}
+.mess{fill:var(--pb);opacity:.85}
+@media (prefers-reduced-motion: no-preference){
+  .pop{animation:pop .35s ease-out}
+  @keyframes pop{from{transform:scale(.98);opacity:.6}to{transform:none;opacity:1}}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>🥪 The PB&amp;J Robot</h1>
+    <p class="lede">Two slices of bread are already on the plate and the knife is on the counter. Write step-by-step instructions for making a peanut butter and jelly sandwich. The robot follows them exactly as written—it can’t guess what you meant.</p>
+  </div>
+</header>
+
+<main class="wrap grid">
+  <section class="panel editor" aria-labelledby="h-editor">
+    <div class="panel-head">
+      <h2 id="h-editor">Your algorithm</h2>
+      <span class="hint">One step per line</span>
+    </div>
+    <label for="code" class="hint" style="display:none">Instructions</label>
+    <textarea id="code" spellcheck="false" placeholder="1. Open the bag of bread&#10;2. ...&#10;3. ..."></textarea>
+    <div class="controls">
+      <button id="run" class="primary">▶ Run</button>
+      <button id="step">Step once</button>
+      <button id="reset">↺ Reset kitchen</button>
+    </div>
+    <div class="options">
+      <label>Speed <input type="range" id="speed" min="1" max="5" value="3" aria-label="Robot speed"></label>
+      <label><input type="checkbox" id="picky">
+        <span>Picky robot<small>Needs two free hands to open things, and won’t guess how many slices you mean.</small></span>
+      </label>
+    </div>
+    <div class="extras">
+      <button class="linkish" id="example">Load a buggy example</button>
+    </div>
+    <details>
+      <summary>Words the robot understands</summary>
+      <p><strong>Actions:</strong> open, close, take / pick up / grab, put / place, put down, dip / scoop, spread, put together, cut, clean.</p>
+      <p><strong>Things:</strong> bag of bread, slice of bread, peanut butter jar, jelly jar, lid, knife, plate.</p>
+      <p>You can combine two actions in one step with “and then.” The robot only knows these words, so if it doesn’t understand you, try saying it more simply.</p>
+    </details>
+  </section>
+
+  <section class="panel stage" aria-labelledby="h-stage">
+    <h2 id="h-stage" style="position:absolute;left:-9999px">Kitchen</h2>
+    <div class="bubble" id="bubble" role="status" aria-live="polite">Beep boop. Two slices of bread are on the plate and the knife is on the counter. Type your instructions and press Run.</div>
+    <div class="scene-wrap"><svg id="scene" viewBox="0 0 640 320" role="img" aria-label="The robot’s kitchen counter"></svg></div>
+    <div class="status" id="status"></div>
+  </section>
+
+  <section class="panel log-card" aria-labelledby="h-log">
+    <h2 id="h-log">Robot log</h2>
+    <p class="empty" id="logEmpty">Each step the robot runs will show up here.</p>
+    <ol id="log"></ol>
+    <div id="result"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const PICKY = () => $('#picky').checked;
+const ok = m => ({type:'ok', msg:m}), warn = m => ({type:'warn', msg:m}), err = m => ({type:'err', msg:m});
+const NAME = {pb:'peanut butter', jelly:'jelly'};
+let S, prog = null, timer = null, running = false;
+
+function fresh(){
+  return { hands:[], bag:{open:false, torn:false, where:'counter'}, pb:{lid:true}, jelly:{lid:true},
+    knife:{where:'counter', coat:new Set()}, slices:[{where:'plate', pb:false, jelly:false},{where:'plate', pb:false, jelly:false}], sandwich:null, mess:0, goo:false, loaf:18, drawerOpened:false };
+}
+
+/* ---------- helpers ---------- */
+const R = { pb:/peanut|\bpb\b/, jelly:/jelly|\bjam\b|preserves/, bread:/bread|slice|piece|loaf/, slice:/slice|piece/,
+  bag:/\bbag\b|wrapper|twist tie|\btie\b/, knife:/knife|spreader|utensil|spatula/, lid:/\blids?\b|\bcaps?\b/,
+  jar:/\bjars?\b/, plate:/plate/, sandwich:/sandwich/ };
+const handName = {knife:'the knife', bag:'the bread bag', pb:'the peanut butter jar', jelly:'the jelly jar', slices:'bread'};
+function handList(){ return S.hands.map(h=>handName[h]).join(' and '); }
+function hold(i){ if(!S.hands.includes(i)) S.hands.push(i); }
+function drop(i){ S.hands = S.hands.filter(h=>h!==i); }
+function freeHands(){ return 2 - S.hands.length; }
+const inHand = () => S.slices.filter(s=>s.where==='hand');
+const outSlices = () => S.slices.filter(s=>s.where==='plate'||s.where==='counter');
+const plural = (n,w) => n===1 ? `${n} ${w}` : `${n} ${w}s`;
+
+function cleanLine(l){
+  return l.replace(/^\s*(step\s*)?\d+\s*[\.\):\-]?\s*/i,'').replace(/^\s*[-*•]\s*/,'').replace(/^(please|now|next|then|finally|lastly|after that)[,\s]+/i,'').trim().replace(/[.!]+$/,'');
+}
+const VERB = /^(please\s+)?(open|close|take|grab|get|pick|put|place|set|lay|spread|smear|dip|scoop|stick|insert|cut|eat|serve|wash|clean|wipe|unscrew|untwist|screw|remove|flip|press|stack|combine|fold|lift|pull|hold|drop|release|let|fetch|cover|coat|load|dunk|untie|seal|reseal|tighten|twist|grab)\b/i;
+function splitCompound(line){
+  const parts = line.split(/\s*,?\s*\b(?:and then|then|and)\b\s*|\s*;\s*/i);
+  const out = [];
+  for(const p of parts){
+    const q = p.trim(); if(!q) continue;
+    if(out.length && !VERB.test(q)) out[out.length-1] += ' and ' + q; else out.push(q);
+  }
+  return out.length ? out : [line];
+}
+
+/* ---------- interpreter ---------- */
+function exec(raw){
+  const t = ' ' + raw.toLowerCase().replace(/[’‘]/g,"'") + ' ';
+  const f = { pb:R.pb.test(t), jl:R.jelly.test(t), br:R.bread.test(t), bag:R.bag.test(t), kn:R.knife.test(t),
+    lid:R.lid.test(t), plate:R.plate.test(t), sw:R.sandwich.test(t), jar:R.jar.test(t), it:/\bit\b/.test(t) };
+  const breadCount = (t.match(/bread|slice|piece/g)||[]).length;
+
+  if(/\b(eat|serve|enjoy)\b/.test(t)) return eat();
+  if(/\b(wash|clean|wipe|lick)\b/.test(t) && (f.kn || f.it)) return cleanKnife();
+  if(/\b(close|seal|reseal|screw on|tighten)\b/.test(t) || (f.lid && /\b(put|place|screw|twist)\b/.test(t) && /\b(on|back)\b/.test(t))) return closeThing(t,f);
+  if(/\b(open|unscrew|untwist|untie|unwrap)\b/.test(t) || (f.lid && /\b(remove|off)\b/.test(t))) return openThing(t,f);
+  if(/\bcut\b/.test(t) || (/\bslice\b/.test(t) && (f.sw || /half|halves|triangle/.test(t)) && !/\bslices?\s+of\b/.test(t))) return cut();
+  if(/\b(spread|smear|cover|coat|paint|smooth)\b/.test(t)) return spread(t,f);
+  const stackWords = /\b(together|stack|combine|press|fold|flip)\b/.test(t) || /on top|onto the other|on the other|over the other|on another/.test(t) || /slice.*\bon\b.*slice/.test(t);
+  const stackTarget = f.br || f.sw || /\b(them|both|sides|halves)\b/.test(t);
+  const stackOk = breadCount>=2 || /\b(together|them|both|sandwich|other)\b/.test(t) || (!f.pb && !f.jl && f.br);
+  if(stackWords && stackTarget && stackOk) return stack(t);
+  const knifeRef = f.kn || (f.it && S.knife.where==='hand');
+  if(/\b(dip|scoop|dunk|stick|insert|load|dig)\b/.test(t) || (knifeRef && (f.pb||f.jl||f.jar) && (/\b(in|into)\b/.test(t) || (/\b(on|onto|with)\b/.test(t) && !f.br)))) return dip(t,f);
+  if(/\b(put|place|set|lay|drop|release|let go)\b/.test(t)) return put(t,f);
+  if(/\b(take|grab|get|pick|hold|lift|pull|remove|fetch)\b/.test(t)) return take(t,f);
+  return err(`I don’t know how to “${raw}.” I only understand simple commands like open, take, put, dip, spread, and put together.`);
+}
+
+function needHands(n, what){
+  if(PICKY() && S.hands.length>0 && n===2) return err(`I need two free hands to ${what}: one to hold it and one to twist. Right now I’m holding ${handList()}.`);
+  if(freeHands()<1) return err(`My hands are full! I’m holding ${handList()}, so I can’t ${what}.`);
+  return null;
+}
+
+function openThing(t,f){
+  if(/drawer/.test(t) && !f.pb && !f.jl && !f.br){ S.drawerOpened = true; return ok(`I opened the drawer. I can see a butter knife inside.`); }
+  let targets = [];
+  if(f.pb) targets.push('pb'); if(f.jl) targets.push('jelly');
+  if(!targets.length && /\b(jars|both)\b/.test(t)) targets = ['pb','jelly'];
+  if(!targets.length && f.it){
+    if(S.hands.includes('pb')) targets=['pb']; else if(S.hands.includes('jelly')) targets=['jelly'];
+    else if(S.hands.includes('bag')) return openBag(t,true);
+  }
+  if(!targets.length && (f.bag || f.br)) return openBag(t, f.bag);
+  if(!targets.length) return err(`Open what? I can see a bag of bread, a peanut butter jar, and a jelly jar.`);
+  const done=[], already=[];
+  for(const k of targets){
+    if(!S[k].lid){ already.push(NAME[k]); continue; }
+    const h = needHands(2, `open the ${NAME[k]} jar`); if(h) return h;
+    S[k].lid = false; done.push(NAME[k]);
+  }
+  if(!done.length) return warn(`The ${already.join(' and ')} jar is already open.`);
+  return ok(`I twisted off the lid${done.length>1?'s':''} of the ${done.join(' and ')} jar${done.length>1?'s':''} and set ${done.length>1?'them':'it'} on the counter.`);
+}
+function openBag(t, saidBag){
+  if(S.bag.open) return warn(`The bread bag is already open.`);
+  const h = needHands(2, 'open the bread bag'); if(h) return h;
+  S.bag.open = true;
+  if(!saidBag){ S.bag.torn = true; S.mess++; return warn(`You said to open the bread, so I ripped the bag open with my claws. It’s open… technically. (Did you mean the bag?)`); }
+  return ok(`I untwisted the twist tie and opened the bag of bread.`);
+}
+
+function closeThing(t,f){
+  let targets = [];
+  if(f.pb) targets.push('pb'); if(f.jl) targets.push('jelly');
+  if(!targets.length && /\b(jars|both|lids)\b/.test(t)) targets = ['pb','jelly'];
+  if(!targets.length && (f.bag || f.br)){
+    if(S.bag.torn) return warn(`I tried to close the bread bag, but it’s ripped. The bread is going to get stale.`);
+    if(!S.bag.open) return warn(`The bread bag is already closed.`);
+    S.bag.open = false; return ok(`I twisted the bag closed and put the tie back on.`);
+  }
+  if(!targets.length && f.lid){ targets = ['pb','jelly'].filter(k=>!S[k].lid); if(targets.length>1) return err(`Which lid? There are two lids on the counter.`); }
+  if(!targets.length) return err(`Close what? Tell me which thing to close.`);
+  const done=[];
+  for(const k of targets){ if(!S[k].lid){ S[k].lid = true; done.push(NAME[k]); } }
+  if(!done.length) return warn(`That jar already has its lid on.`);
+  return ok(`I screwed the lid back on the ${done.join(' and ')} jar${done.length>1?'s':''}.`);
+}
+
+function sliceCount(t){
+  if(/\b(two|2|both|pair|couple)\b/.test(t)) return 2;
+  if(/\b(three|3)\b/.test(t)) return 3;
+  if(/\b(four|4)\b/.test(t)) return 4;
+  if(/\b(one|1|a|an|single|another)\b/.test(t)) return 1;
+  if(/slices|pieces/.test(t)) return PICKY() ? 0 : 2;
+  return 1;
+}
+
+function take(t,f){
+  const results = [];
+  if(f.kn){
+    if(S.knife.where==='hand') results.push(warn(`I’m already holding the knife.`));
+    else {
+      if(freeHands()<1) return err(`My hands are full! I’m holding ${handList()}, so I can’t pick up the knife.`);
+      const first = S.knife.where==='drawer';
+      S.knife.where='hand'; hold('knife');
+      results.push(ok(first ? `I opened the drawer and picked up a butter knife.` : `I picked up the knife.`));
+    }
+  }
+  if((f.pb||f.jl) && !f.br){
+    for(const k of ['pb','jelly']){
+      if(k==='pb' && !f.pb) continue; if(k==='jelly' && !f.jl) continue;
+      if(S.hands.includes(k)){ results.push(warn(`I’m already holding the ${NAME[k]} jar.`)); continue; }
+      if(freeHands()<1) return err(`My hands are full! I’m holding ${handList()}, so I can’t pick up the ${NAME[k]} jar.`);
+      hold(k); results.push(ok(`I picked up the whole ${NAME[k]} jar.`));
+    }
+  }
+  if(f.br || f.bag){
+    const saidSlice = f.slice || R.slice.test(t);
+    if(!saidSlice){
+      if(S.bag.open) return err(`You said to take the bread, so I pulled the entire loaf out of the bag. I’m now hugging ${S.loaf} slices of bread. How many slices did you want?`);
+      if(S.hands.includes('bag')) results.push(warn(`I’m already holding the bag of bread.`));
+      else {
+        if(freeHands()<1) return err(`My hands are full! I’m holding ${handList()}.`);
+        hold('bag'); results.push(warn(`I picked up the whole bag of bread. (Did you want slices?)`));
+      }
+    } else {
+      if(!S.bag.open) return err(`I squeezed the bag, but the bread is sealed inside. The bag is still closed.`);
+      const n = sliceCount(t);
+      if(n===0) return err(`How many slices? I’m a robot. “Slices” could mean two or twenty.`);
+      if(!S.hands.includes('slices') && freeHands()<1) return err(`My hands are full! I’m holding ${handList()}, so I can’t grab bread.`);
+      for(let i=0;i<n;i++) S.slices.push({where:'hand', pb:false, jelly:false});
+      S.loaf -= n; hold('slices');
+      results.push(ok(`I pulled ${plural(n,'slice')} of bread out of the bag.`));
+    }
+  }
+  if(!results.length) return err(`Take what? Tell me exactly which thing to pick up.`);
+  return combine(results);
+}
+
+function combine(rs){
+  const type = rs.some(r=>r.type==='err')?'err':rs.some(r=>r.type==='warn')?'warn':'ok';
+  return {type, msg:rs.map(r=>r.msg).join(' ')};
+}
+
+function put(t,f){
+  const where = f.plate ? 'plate' : 'counter';
+  if((f.kn || (f.it && S.knife.where==='hand' && !f.br && !f.pb && !f.jl)) && !f.pb && !f.jl && !f.br){
+    if(S.knife.where!=='hand') return warn(`I’m not holding the knife.`);
+    S.knife.where='counter'; drop('knife');
+    return ok(/sink/.test(t) ? `I put the knife in the sink.` : `I put the knife down on the counter.`);
+  }
+  if((f.pb || f.jl) && (f.br || f.sw)){
+    const k = f.pb && !f.jl ? 'pb' : (f.jl && !f.pb ? 'jelly' : null);
+    if(!k) return err(`One thing at a time, please. Tell me about the peanut butter and the jelly in separate steps.`);
+    if(S.knife.where==='hand' && S.knife.coat.has(k)) return spread(t,f);
+    if(f.kn) return err(`I’d use the knife, but there’s no ${NAME[k]} on it yet.`);
+    if(!S.slices.length) { S.mess++; return err(`You said to put the ${NAME[k]} on the bread, so I set the whole ${NAME[k]} jar on top of the bread bag. Hmm.`); }
+    S.mess++;
+    return err(`You said to put the ${NAME[k]} on the bread, so I set the whole ${NAME[k]} jar on top of the bread. Squish. 🫠 How should the ${NAME[k]} get out of the jar?`);
+  }
+  if(f.br || (f.it && S.hands.includes('slices'))){
+    const hs = inHand();
+    if(hs.length){ hs.forEach(s=>s.where=where); drop('slices'); return ok(`I laid ${plural(hs.length,'slice')} of bread on the ${where}.`); }
+    if(S.hands.includes('bag')){ drop('bag'); return warn(`I set the whole bag of bread down on the ${where}.`); }
+    return err(`I’m not holding any bread.`);
+  }
+  if(f.bag){ if(S.hands.includes('bag')){ drop('bag'); return ok(`I set the bag of bread down.`);} return warn(`I’m not holding the bag.`); }
+  if(f.pb || f.jl || f.jar){
+    const ks = ['pb','jelly'].filter(k=>(k==='pb'?f.pb:f.jl) || (!f.pb && !f.jl));
+    const held = ks.filter(k=>S.hands.includes(k));
+    if(!held.length) return warn(`I’m not holding that jar.`);
+    held.forEach(drop); return ok(`I set the ${held.map(k=>NAME[k]).join(' and ')} jar down.`);
+  }
+  if(/\b(down|everything|all)\b/.test(t) && S.hands.length){
+    if(S.hands.includes('knife')) S.knife.where='counter';
+    inHand().forEach(s=>s.where='counter');
+    S.hands=[]; return ok(`I put everything down on the counter.`);
+  }
+  return err(`Put what, where? Tell me the thing and the place, like “put the slices on the plate.”`);
+}
+
+function whichSpread(t,f){
+  if(f.pb && !f.jl) return 'pb';
+  if(f.jl && !f.pb) return 'jelly';
+  if(f.pb && f.jl) return 'both';
+  if(S.knife.coat.size===1) return [...S.knife.coat][0];
+  return null;
+}
+
+function dip(t,f){
+  let k = whichSpread(t,f);
+  if(k==='both') return err(`One jar at a time, please.`);
+  if(!k){
+    const open = ['pb','jelly'].filter(x=>!S[x].lid);
+    if(open.length===1) k = open[0]; else return err(`Which jar? Peanut butter or jelly?`);
+  }
+  if(S[k].lid) return err(`*Clank.* The knife bounced off the lid. The ${NAME[k]} jar is still closed.`);
+  if(S.knife.where!=='hand'){
+    S.goo = true; S.mess += 2;
+    return err(`Scoop with what? I’m not holding a knife, so I scooped the ${NAME[k]} out with my bare robot hand. Gross.`);
+  }
+  const other = k==='pb'?'jelly':'pb';
+  S.knife.coat.add(k);
+  if(S.knife.coat.has(other)){ S.mess++; return warn(`I dipped the knife in the ${NAME[k]}, but it still had ${NAME[other]} on it. Now there’s ${NAME[other]} mixed into the ${NAME[k]} jar.`); }
+  return ok(`I dipped the knife into the ${NAME[k]} and scooped some out.`);
+}
+
+function spread(t,f){
+  let k = whichSpread(t,f);
+  if(k==='both') return err(`One spread at a time, please. Spread the peanut butter and the jelly in separate steps.`);
+  if(S.knife.where!=='hand'){
+    if(!k) return err(`Spread what, with what? I’m not holding anything to spread with.`);
+    return err(`Spread it with what? I’m not holding a knife.`);
+  }
+  if(!k) return err(`I swiped the clean knife across the bread. Nothing happened. There’s nothing on the knife to spread.`);
+  if(!S.knife.coat.has(k)){
+    if(S.knife.coat.size) return err(`The knife has ${NAME[[...S.knife.coat][0]]} on it, not ${NAME[k]}.`);
+    return err(`I swiped the knife across the bread, but nothing happened. There’s no ${NAME[k]} on the knife.`);
+  }
+  if(S.sandwich) return err(`The sandwich is already put together. I can’t reach the inside anymore.`);
+  const out = outSlices();
+  if(!out.length){
+    if(inHand().length) return err(`The bread is in my hand. Put it down first so I can spread on it.`);
+    S.mess++; S.knife.coat.delete(k);
+    return err(`There’s no bread out yet, so I spread ${NAME[k]} on the outside of the bread bag.`);
+  }
+  let target;
+  if(/\b(other|second|2nd|another|two|2)\b/.test(t)) target = out[1] || out[0];
+  else if(/\b(first|1st)\b/.test(t)) target = out[0];
+  else target = out.find(s=>!s.pb && !s.jelly) || out.find(s=>!s[k]) || out[0];
+  const i = S.slices.indexOf(target);
+  const n = out.indexOf(target)+1;
+  S.knife.coat.delete(k);
+  if(target[k]) return warn(`I spread more ${NAME[k]} on slice ${n}. It already had some.`);
+  target[k] = true;
+  const note = (k==='pb'?target.jelly:target.pb) ? ` Now slice ${n} has peanut butter and jelly on it.` : '';
+  return ok(`I spread ${NAME[k]} on slice ${n}.${note}`);
+}
+
+function stack(t){
+  if(S.sandwich) return warn(`The sandwich is already put together.`);
+  const avail = S.slices.filter(s=>s.where!=='sandwich');
+  if(avail.length<2) return err(`I need two slices of bread to make a sandwich. I can only find ${avail.length}.`);
+  const spreadFirst = [...avail].sort((a,b)=>((b.pb||b.jelly)?1:0)-((a.pb||a.jelly)?1:0));
+  let bottom = spreadFirst[0], top = spreadFirst[1];
+  if((top.pb||top.jelly) && !(bottom.pb||bottom.jelly)) [bottom,top]=[top,bottom];
+  const facing = /\b(together|face|faces|facing|down|flip|upside|inside|sticky|toward|towards)\b/.test(t) && !/face up|side up/.test(t);
+  const topSpread = top.pb || top.jelly;
+  const inside = facing || !topSpread;
+  bottom.where='sandwich'; top.where='sandwich';
+  if(!S.slices.some(s=>s.where==='hand')) drop('slices');
+  S.sandwich = {inside, pb:bottom.pb||top.pb, jelly:bottom.jelly||top.jelly, outsideKind: !inside ? (top.jelly?'jelly':'pb') : null, cut:false};
+  if(inside) return ok(`I pressed the two slices together. It’s a sandwich!`);
+  S.mess++;
+  return warn(`I put one slice on top of the other—spread side up, since you didn’t say to flip it. Now there’s ${NAME[S.sandwich.outsideKind]} on the outside of the sandwich.`);
+}
+
+function cut(){
+  if(!S.sandwich) return err(`Cut what? There’s no sandwich yet.`);
+  if(S.knife.where!=='hand') return err(`Cut it with what? I’m not holding the knife.`);
+  S.sandwich.cut = true;
+  return ok(`I cut the sandwich in half.`);
+}
+function cleanKnife(){
+  if(S.knife.where!=='hand') return warn(`I’m not holding the knife.`);
+  S.knife.coat.clear(); return ok(`I wiped the knife clean.`);
+}
+function eat(){
+  if(S.sandwich && S.sandwich.inside && S.sandwich.pb && S.sandwich.jelly) return ok(`Robots don’t eat, but I served the sandwich. It looks delicious!`);
+  return warn(`I’d serve it, but there isn’t a finished sandwich yet.`);
+}
+
+/* ---------- scene ---------- */
+function breadPath(x,y,w,h){
+  const b=h*0.26;
+  return `M${x} ${y+h} L${x} ${y+b} Q${x} ${y} ${x+w*0.28} ${y+b*0.35} Q${x+w/2} ${y-b*0.25} ${x+w*0.72} ${y+b*0.35} Q${x+w} ${y} ${x+w} ${y+b} L${x+w} ${y+h} Z`;
+}
+function sliceSVG(x,y,s,i){
+  let g = `<path class="bread" d="${breadPath(x,y,76,66)}"/>`;
+  if(s.pb) g += `<path class="pbf" d="${breadPath(x+8,y+10,60,48)}"/>`;
+  if(s.jelly) g += s.pb ? `<ellipse class="jellyf" cx="${x+38}" cy="${y+38}" rx="18" ry="13"/>` : `<path class="jellyf" d="${breadPath(x+8,y+10,60,48)}"/>`;
+  g += `<text class="lbl" x="${x+38}" y="${y-6}" text-anchor="middle">slice ${i}</text>`;
+  return g;
+}
+function jarSVG(x,k){
+  const label = k==='pb' ? 'P.B.' : 'JELLY';
+  if(S.hands.includes(k)) return `<rect class="ghost" x="${x}" y="164" width="70" height="86" rx="12"/><text class="lbl" x="${x+35}" y="212" text-anchor="middle">in hand</text>`;
+  let g = `<rect class="glass" x="${x}" y="172" width="70" height="78" rx="12"/><rect class="${k==='pb'?'pbf':'jellyf'}" x="${x+6}" y="184" width="58" height="60" rx="9"/>`;
+  g += `<rect class="jlabel" x="${x+11}" y="202" width="48" height="22" rx="4"/><text class="jtext" x="${x+35}" y="217" text-anchor="middle">${label}</text>`;
+  if(S[k].lid) g += `<rect class="lid" x="${x-3}" y="160" width="76" height="16" rx="4"/>`;
+  else g += `<ellipse class="hole" cx="${x+35}" cy="174" rx="30" ry="6"/><ellipse class="lid" cx="${x+35}" cy="292" rx="30" ry="8"/>`;
+  return g;
+}
+function bagSVG(){
+  if(S.hands.includes('bag')) return `<rect class="ghost" x="30" y="118" width="116" height="132" rx="14"/><text class="lbl" x="88" y="190" text-anchor="middle">in hand</text>`;
+  let g = `<rect class="bread" x="44" y="${S.bag.open?150:162}" width="88" height="${S.bag.open?96:84}" rx="16"/>`;
+  if(S.bag.torn) g += `<path class="bagc" d="M34 250 L34 150 L44 136 L54 150 L66 132 L78 148 L92 130 L104 148 L118 134 L130 150 L142 140 L142 250 Z"/>`;
+  else if(S.bag.open) g += `<path class="bagc" d="M34 250 L34 150 L22 126 L154 126 L142 150 L142 250 Z"/>`;
+  else g += `<path class="bagc" d="M34 250 L34 162 Q34 142 66 136 L80 114 L96 114 L110 136 Q142 142 142 162 L142 250 Z"/><path class="bagc" d="M80 114 Q88 92 96 114 Z"/><rect class="tie" x="76" y="110" width="24" height="7" rx="3"/>`;
+  g += `<text class="btext" x="88" y="212" text-anchor="middle">BREAD</text>`;
+  return g;
+}
+function knifeSVG(x,y){
+  let g = `<rect class="handle" x="${x}" y="${y}" width="46" height="11" rx="5"/><path class="steel" d="M${x+44} ${y+1} L${x+112} ${y+2} Q${x+124} ${y+5} ${x+112} ${y+10} L${x+44} ${y+10} Z"/>`;
+  const c=[...S.knife.coat];
+  c.forEach((k,i)=>{ g += `<ellipse class="${k==='pb'?'pbf':'jellyf'}" cx="${x+100-i*14}" cy="${y+5.5}" rx="12" ry="4.5"/>`; });
+  return g;
+}
+function sandwichSVG(){
+  const s=S.sandwich, x=236, w=168;
+  let g = `<rect class="bread" x="${x}" y="222" width="${w}" height="20" rx="8"/>`;
+  let y = 222;
+  const fills = [];
+  if(s.pb) fills.push('pb'); if(s.jelly) fills.push('jelly');
+  const inner = s.inside ? fills : fills.filter(k=>k!==s.outsideKind);
+  inner.forEach(k=>{ y-=7; g += `<rect class="${k==='pb'?'pbf':'jellyf'}" x="${x+6}" y="${y}" width="${w-12}" height="7" rx="3"/>`; });
+  y -= 20; g += `<rect class="bread" x="${x}" y="${y}" width="${w}" height="20" rx="8"/>`;
+  if(!s.inside){ g += `<rect class="${s.outsideKind==='pb'?'pbf':'jellyf'}" x="${x+8}" y="${y-7}" width="${w-16}" height="8" rx="4"/><path class="${s.outsideKind==='pb'?'pbf':'jellyf'}" d="M${x+30} ${y} q4 12 8 0 Z M${x+120} ${y} q4 14 8 0 Z"/>`; }
+  if(s.cut) g += `<line x1="${x+w/2}" y1="${y-8}" x2="${x+w/2}" y2="244" stroke="var(--crust)" stroke-width="3" stroke-dasharray="5 4"/>`;
+  g += `<text class="lbl" x="${x+w/2}" y="${y-14}" text-anchor="middle">${s.inside && s.pb && s.jelly ? 'PB&amp;J sandwich' : 'sandwich?'}</text>`;
+  return g;
+}
+function render(){
+  const g=[];
+  g.push(`<rect class="wall" x="0" y="0" width="640" height="250"/>`);
+  for(let r=0;r<5;r++) for(let c=0;c<16;c++) if((r+c)%2===0) g.push(`<rect class="tile" x="${c*40}" y="${r*40+30}" width="40" height="40" opacity=".55"/>`);
+  g.push(`<rect class="counter" x="0" y="250" width="640" height="70"/><rect class="counter-edge" x="0" y="250" width="640" height="6"/>`);
+  g.push(`<rect class="drawer" x="120" y="268" width="120" height="40" rx="5"/><rect class="knob" x="166" y="280" width="28" height="7" rx="3.5"/>`);
+  if(S.knife.where==='drawer') g.push(`<text class="lbl" x="180" y="302" text-anchor="middle">knife drawer</text>`);
+  g.push(bagSVG());
+  g.push(`<ellipse class="plate" cx="320" cy="246" rx="116" ry="11"/>`);
+  if(S.sandwich) g.push(sandwichSVG());
+  const out = outSlices();
+  const pos=[242,330];
+  const shown = S.sandwich ? [] : out.slice(0,2);
+  shown.forEach((s,i)=>g.push(sliceSVG(pos[i],174,s,i+1)));
+  const extra = out.length - shown.length;
+  if(extra>0) g.push(`<text class="lbl" x="320" y="150" text-anchor="middle">+${extra} more slice${extra>1?'s':''} on the counter</text>`);
+  g.push(jarSVG(450,'pb'));
+  g.push(jarSVG(546,'jelly'));
+  if(S.knife.where==='counter') g.push(knifeSVG(262,284));
+  if(S.mess>0) for(let i=0;i<Math.min(S.mess,5);i++) g.push(`<ellipse class="mess" cx="${60+i*118}" cy="${262+(i%2)*8}" rx="${9+i%3*3}" ry="4"/>`);
+  $('#scene').innerHTML = g.join('');
+  renderStatus();
+}
+function renderStatus(){
+  const chips=[];
+  if(!S.hands.length) chips.push(`<span class="chip">✋ empty</span>`);
+  for(const h of S.hands){
+    if(h==='knife'){ const c=[...S.knife.coat].map(k=>NAME[k]); chips.push(`<span class="chip">🔪 knife${c.length?` with ${c.join(' and ')}`:''}</span>`); }
+    else if(h==='slices'){ chips.push(`<span class="chip">🍞 ${plural(inHand().length,'slice')}</span>`); }
+    else if(h==='bag') chips.push(`<span class="chip">🛍️ bread bag</span>`);
+    else chips.push(`<span class="chip">${h==='pb'?'🥜':'🍇'} ${NAME[h]} jar</span>`);
+  }
+  if(S.goo) chips.push(`<span class="chip bad">🤖 sticky robot hand</span>`);
+  const mess = S.mess ? `<span class="chip bad">🧽 ${plural(S.mess,'mess')}</span>` : '';
+  $('#status').innerHTML = `<span class="k">Robot’s hands:</span> ${chips.join(' ')} ${mess}`;
+}
+function say(r){
+  const b=$('#bubble'); b.className='bubble '+r.type; b.textContent=r.msg;
+  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+}
+
+/* ---------- runner ---------- */
+function esc(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function start(){
+  S = fresh();
+  const steps = $('#code').value.split('\n').map(cleanLine).filter(Boolean);
+  prog = {steps, i:0, done:false};
+  $('#log').innerHTML=''; $('#result').innerHTML=''; $('#logEmpty').style.display='block';
+  render();
+}
+function stepOnce(){
+  if(!prog || prog.done) start();
+  if(!prog.steps.length){ say(warn(`I don’t have any instructions yet. Type some steps on the left.`)); prog.done=true; return false; }
+  const text = prog.steps[prog.i];
+  const results = [];
+  for(const sub of splitCompound(text)){ const r = exec(sub); results.push(r); if(r.type==='err') break; }
+  const r = combine(results);
+  const li = document.createElement('li'); li.className = r.type;
+  li.innerHTML = `<span class="n">${prog.i+1}</span><div><div class="said">${esc(text)}</div><div class="did">${r.type==='err'?'❌ ':r.type==='warn'?'⚠️ ':'✅ '}${esc(r.msg)}</div></div>`;
+  $('#log').appendChild(li); $('#logEmpty').style.display='none';
+  li.scrollIntoView({block:'nearest'});
+  say(r); render();
+  prog.i++;
+  if(r.type==='err'){ prog.done=true; finish(prog.i); return false; }
+  if(prog.i>=prog.steps.length){ prog.done=true; finish(0); return false; }
+  return true;
+}
+function finish(stuckAt){
+  const box = $('#result');
+  if(stuckAt){
+    box.innerHTML = `<div class="result lose"><h3>🛑 The robot got stuck on step ${stuckAt}.</h3>Read what the robot did, figure out what your instruction was missing, then fix that step and run it again.</div>`;
+    stop(); return;
+  }
+  const s = S.sandwich, win = s && s.inside && s.pb && s.jelly;
+  const problems = [];
+  if(!s) problems.push(`The slices were never put together into a sandwich.`);
+  else {
+    if(!s.pb) problems.push(`There’s no peanut butter in the sandwich.`);
+    if(!s.jelly) problems.push(`There’s no jelly in the sandwich.`);
+    if(!s.inside) problems.push(`Some of the filling ended up on the outside of the sandwich.`);
+  }
+  const tidy = S.pb.lid && S.jelly.lid && !S.bag.open && S.knife.where!=='hand';
+  const extras = [
+    `${tidy?'✅':'⬜'} Clean up: lids back on, bread bag closed, knife put down`,
+    `${S.mess===0?'✅':'⬜'} No messes made`,
+    `🔢 Your algorithm used ${plural(prog.steps.length,'step')}`
+  ];
+  box.innerHTML = win
+    ? `<div class="result win"><h3>🎉 Success! The robot made a PB&amp;J sandwich.</h3><ul>${extras.map(e=>`<li>${e}</li>`).join('')}</ul></div>`
+    : `<div class="result lose"><h3>The program finished, but there’s no PB&amp;J yet.</h3><ul>${problems.map(p=>`<li>${p}</li>`).join('')}</ul></div>`;
+  if(win) say(ok(`Done! One peanut butter and jelly sandwich, made exactly as instructed.`));
+  stop();
+}
+const DELAYS=[1700,1150,750,420,150];
+function loop(){
+  if(!running) return;
+  const more = stepOnce();
+  if(more) timer = setTimeout(loop, DELAYS[$('#speed').value-1]);
+}
+function stop(){ running=false; clearTimeout(timer); $('#run').textContent='▶ Run'; }
+$('#run').addEventListener('click',()=>{
+  if(running){ stop(); return; }
+  if(!prog || prog.done) start();
+  running=true; $('#run').textContent='⏸ Pause'; loop();
+});
+$('#step').addEventListener('click',()=>{ stop(); stepOnce(); });
+$('#reset').addEventListener('click',()=>{ stop(); prog=null; S=fresh(); $('#log').innerHTML=''; $('#result').innerHTML=''; $('#logEmpty').style.display='block'; say({type:'',msg:'Kitchen reset. Two slices of bread are on the plate and the knife is on the counter.'}); render(); });
+$('#code').addEventListener('input',()=>{ stop(); prog=null; try{ localStorage.setItem('pbj-draft',$('#code').value); }catch(e){} });
+$('#example').addEventListener('click',()=>{
+  stop(); prog=null;
+  $('#code').value = `1. Put peanut butter on the bread\n2. Put jelly on the bread\n3. Put the bread together`;
+  try{ localStorage.setItem('pbj-draft',$('#code').value); }catch(e){}
+  $('#reset').click();
+});
+try{ const d=localStorage.getItem('pbj-draft'); if(d) $('#code').value=d; }catch(e){}
+S = fresh(); render();
+})();
+</script>
+</body>
+</html>
